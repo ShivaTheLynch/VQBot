@@ -47,6 +47,10 @@ FARM_MODEL_IDS = []
 OUTPOST_ID = 389
 FARM_END_ID = 200
 
+# Add these constants near the top with other constants
+BLESSING_POSITION = (-8394, -9801)
+BLESSING_DIALOG_ID = "0x86"  # The dialog ID for the blessing
+
 class BotVars:
     def __init__(self, starting_outpost_id=0, farm_end_id=0):
         self.starting_map = starting_outpost_id
@@ -434,6 +438,32 @@ def WaitForLoot():
         SetPendingAction(2000)
         return True
 
+def RequestBlessing():
+    global FSM_vars
+    if IfActionIsPending():
+        return False
+    
+    current_pos = Player.GetXY()
+    distance = Utils.Distance(current_pos, BLESSING_POSITION)
+    Py4GW.Console.Log(bot_vars.window_module.module_name, f"Distance to blessing point: {distance}", Py4GW.Console.MessageType.Info)
+    
+    if distance > 250:
+        return False
+        
+    # Target the NPC
+    Player.SendChatCommand("target Luxon Priest")
+    SetPendingAction(2000)  # Increased delay
+    
+    # Take dialog
+    Player.SendChatCommand("dialog take")
+    SetPendingAction(2000)  # Increased delay
+    
+    # Select blessing
+    Player.SendChatCommand(f"dialog {BLESSING_DIALOG_ID}")
+    SetPendingAction(2000)  # Increased delay
+    
+    Py4GW.Console.Log(bot_vars.window_module.module_name, "Requested blessing from NPC", Py4GW.Console.MessageType.Info)
+    return True
 
 FSM_vars.loot_items.AddState(name="Select Item",
                     execute_fn=lambda: FSM_vars.current_loot_target != None and Player.ChangeTarget(FSM_vars.current_loot_target),
@@ -488,14 +518,11 @@ FSM_vars.farm_machine.AddState(name="Check if Alive",
                        run_once=False)
 FSM_vars.farm_machine.AddState(name="Seek for Farm",
                        execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.current_map_pathing, FSM_vars.movement_handler),
-                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or LootFound() or Map.GetMapID() != FSM_vars.current_map_id,
+                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or Map.GetMapID() != FSM_vars.current_map_id,
                        run_once=False)
 FSM_vars.farm_machine.AddSubroutine(name="Engage Farm",
                        sub_fsm = FSM_vars.fight_enemies,
                        condition_fn=lambda: not EnemyFound() or not Agent.IsAlive(Player.GetAgentID()))
-FSM_vars.farm_machine.AddSubroutine(name="Loot Items",
-                       sub_fsm = FSM_vars.loot_items,
-                       condition_fn=lambda: not LootFound())
 FSM_vars.farm_machine.AddState(name="Reset pather to find nearest point",
                        execute_fn=lambda: ResetPathing(FSM_vars.current_map_pathing) if not Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) else None,
                        run_once=True)
@@ -505,9 +532,12 @@ FSM_vars.farm_machine.AddState(name="Finished")
 FSM_vars.path_to_farm_machine.AddState(name="Check For Pathing Map",
                         execute_fn=lambda: CheckForMap(),
                         run_once=False)
-FSM_vars.path_to_farm_machine.AddState(name="Reset Movement", # after mapping into new zone, need to prevent previous coord from trying to finish
-                       execute_fn=lambda: FSM_vars.movement_handler.reset(), 
-                       transition_delay_ms=1200)
+FSM_vars.path_to_farm_machine.AddState(name="Check For Blessing",
+                        execute_fn=lambda: RequestBlessing(),
+                        transition_delay_ms=6000)  # Increased delay to ensure all commands complete
+FSM_vars.path_to_farm_machine.AddState(name="Reset Movement",
+                        execute_fn=lambda: FSM_vars.movement_handler.reset(),
+                        transition_delay_ms=1200)
 FSM_vars.path_to_farm_machine.AddSubroutine(name="Handle Map Pathing",
                        sub_fsm = FSM_vars.farm_machine,
                        condition_fn=lambda: IsCurrentPathFinished() or Map.GetMapID() != FSM_vars.current_map_id) # if path finished or not in same map, then move on
