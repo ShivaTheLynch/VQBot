@@ -46,11 +46,7 @@ map_paths = {
 FARM_MODEL_IDS = [] 
 OUTPOST_ID = 389
 FARM_END_ID = 200
-
-# Add these constants near the top with other constants
 BLESSING_POSITION = (-8394, -9801)
-BLESSING_DIALOG_ID = "0x86"  # The dialog ID for the blessing
-
 class BotVars:
     def __init__(self, starting_outpost_id=0, farm_end_id=0):
         self.starting_map = starting_outpost_id
@@ -89,6 +85,7 @@ class StateMachineVars:
             # Movement
             self.outpost_pathing = Routines.Movement.PathHandler(outpost_coordinate_list)
             self.current_map_pathing = Routines.Movement.PathHandler([])
+            self.bounty_npc = Routines.Movement.PathHandler([(-8394, -9801)])  # Added bounty NPC path
             self.chest_found_pathing = None
             self.current_map_id = 0
             self.movement_handler = Routines.Movement.FollowXY()
@@ -308,39 +305,31 @@ def UpdateLootTarget(max_distance=1250):
     if IfActionIsPending():
         return
 
-    # Reset loot target if it's invalid
-    if FSM_vars.current_loot_target is not None:
-        if not Agent.IsItem(FSM_vars.current_loot_target):
-            FSM_vars.current_loot_target = None
-            return
+    # Reset loot target once it's no longer valid or has been picked up
+    if FSM_vars.current_loot_target is not None and not Agent.IsItem(FSM_vars.current_loot_target):
+        FSM_vars.current_loot_target = None
+        return
 
     # Only look for a new loot target if we don't have one
     if FSM_vars.current_loot_target is None:
-        try:
-            item_array = AgentArray.GetItemArray()
-            if not item_array:  # Check if array is empty
-                return None
-                
-            xy = Player.GetXY()
-            filtered_item_array = AgentArray.Sort.ByDistance(item_array, xy)
-            
-            # Filter items within the maximum distance
-            nearby_items = [
-                item for item in filtered_item_array
-                if Utils.Distance(xy, Agent.GetXY(item)) <= max_distance
-                and Agent.IsItem(item)  # Additional safety check
-            ]
-            
-            # Set the current loot target to the nearest valid item
-            for item in nearby_items:
-                FSM_vars.current_loot_target = item
-                Py4GW.Console.Log(bot_vars.window_module.module_name, f"Loot Item found! {item}", Py4GW.Console.MessageType.Info)
-                return item
-        except Exception as e:
-            Py4GW.Console.Log(bot_vars.window_module.module_name, f"Error in UpdateLootTarget: {str(e)}", Py4GW.Console.MessageType.Error)
-            FSM_vars.current_loot_target = None
+        # Retrieve all items within the area
+        item_array = AgentArray.GetItemArray()
+        xy = Player.GetXY()
+        filtered_item_array = AgentArray.Sort.ByDistance(item_array, xy)
+        
+        # Filter items within the maximum distance
+        nearby_items = [
+            item for item in filtered_item_array
+            if Utils.Distance(xy, Agent.GetXY(item)) <= max_distance
+        ]
+        
+        # Set the current loot target to the nearest valid item
+        for item in nearby_items:
+            FSM_vars.current_loot_target = item
+            Py4GW.Console.Log(bot_vars.window_module.module_name, f"Loot Item found! {item}", Py4GW.Console.MessageType.Info)
+            return item  # Return the loot item if found
 
-    return None
+    return None  # No valid loot item found
 
 def LootFound():
     UpdateLootTarget(max_distance=1250)
@@ -444,41 +433,14 @@ def WaitForLoot():
         return True
     else:
         SetPendingAction(2000)
-        return False  # Changed to False to prevent premature exit
-
-def RequestBlessing():
-    global FSM_vars
-    if IfActionIsPending():
-        return False
-    
-    current_pos = Player.GetXY()
-    distance = Utils.Distance(current_pos, BLESSING_POSITION)
-    Py4GW.Console.Log(bot_vars.window_module.module_name, f"Distance to blessing point: {distance}", Py4GW.Console.MessageType.Info)
-    
-    if distance > 250:
-        return False
-        
-    # Target the NPC
-    Player.SendChatCommand("target Luxon Priest")
-    SetPendingAction(2000)  # Increased delay
-    
-    # Take dialog
-    Player.SendChatCommand("dialog take")
-    SetPendingAction(2000)  # Increased delay
-    
-    # Select blessing
-    Player.SendChatCommand(f"dialog {BLESSING_DIALOG_ID}")
-    SetPendingAction(2000)  # Increased delay
-    
-    Py4GW.Console.Log(bot_vars.window_module.module_name, "Requested blessing from NPC", Py4GW.Console.MessageType.Info)
-    return True
+        return True
 
 FSM_vars.loot_items.AddState(name="Select Item",
                     execute_fn=lambda: FSM_vars.current_loot_target != None and Player.ChangeTarget(FSM_vars.current_loot_target),
-                    transition_delay_ms=1500)  # Increased delay
+                    transition_delay_ms=1000)
 FSM_vars.loot_items.AddState(name="PickUpItem",
-                    execute_fn=lambda: FSM_vars.current_loot_target != None and Agent.IsItem(FSM_vars.current_loot_target) and Routines.Targeting.InteractTarget(),
-                    transition_delay_ms=1500)  # Increased delay and added safety check
+                    execute_fn=lambda: FSM_vars.current_loot_target != None and Routines.Targeting.InteractTarget(),
+                    transition_delay_ms=1000)
 FSM_vars.loot_items.AddState(name="Wait for Loot to Finish",
                     exit_condition=lambda: WaitForLoot(),
                     run_once=False)
@@ -526,14 +488,11 @@ FSM_vars.farm_machine.AddState(name="Check if Alive",
                        run_once=False)
 FSM_vars.farm_machine.AddState(name="Seek for Farm",
                        execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.current_map_pathing, FSM_vars.movement_handler),
-                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or LootFound() or Map.GetMapID() != FSM_vars.current_map_id,
+                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or Map.GetMapID() != FSM_vars.current_map_id,
                        run_once=False)
 FSM_vars.farm_machine.AddSubroutine(name="Engage Farm",
-                       sub_fsm=FSM_vars.fight_enemies,
+                       sub_fsm = FSM_vars.fight_enemies,
                        condition_fn=lambda: not EnemyFound() or not Agent.IsAlive(Player.GetAgentID()))
-FSM_vars.farm_machine.AddSubroutine(name="Collect Loot",
-                       sub_fsm=FSM_vars.loot_items,
-                       condition_fn=lambda: not LootFound())
 FSM_vars.farm_machine.AddState(name="Reset pather to find nearest point",
                        execute_fn=lambda: ResetPathing(FSM_vars.current_map_pathing) if not Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) else None,
                        run_once=True)
@@ -543,9 +502,6 @@ FSM_vars.farm_machine.AddState(name="Finished")
 FSM_vars.path_to_farm_machine.AddState(name="Check For Pathing Map",
                         execute_fn=lambda: CheckForMap(),
                         run_once=False)
-FSM_vars.path_to_farm_machine.AddState(name="Check For Blessing",
-                        execute_fn=lambda: RequestBlessing(),
-                        transition_delay_ms=6000)  # Increased delay to ensure all commands complete
 FSM_vars.path_to_farm_machine.AddState(name="Reset Movement",
                         execute_fn=lambda: FSM_vars.movement_handler.reset(),
                         transition_delay_ms=1200)
@@ -565,15 +521,30 @@ FSM_vars.state_machine.AddState(name="Load SkillBar",
 FSM_vars.state_machine.AddState(name="Leaving Outpost",
                        execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.outpost_pathing, FSM_vars.movement_handler),
                        exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.outpost_pathing, FSM_vars.movement_handler) or Map.IsMapLoading(),
-                       run_once=False) # run once is false because we want to keep updating the pathing objects
+                       run_once=False)
 FSM_vars.state_machine.AddState(name="Waiting for Explorable Map Load",
                        exit_condition=lambda: Routines.Transition.IsExplorableLoaded(log_actions=True),
                        transition_delay_ms=1200)
-FSM_vars.state_machine.AddState(name="Reset Movement", # after mapping into new zone, need to prevent previous coord from trying to finish
+FSM_vars.state_machine.AddState(name="Reset Movement",
                        execute_fn=lambda: FSM_vars.movement_handler.reset(), 
                        transition_delay_ms=1200)
+
+FSM_vars.state_machine.AddState(name="Go to NPC",
+                       execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.bounty_npc, FSM_vars.movement_handler),
+                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.bounty_npc, FSM_vars.movement_handler),
+                       run_once=False)
+FSM_vars.state_machine.AddState(name="Target NPC",
+                       execute_fn=lambda: Player.SendChatCommand("target Luxon Priest"),
+                       transition_delay_ms=1000)
+FSM_vars.state_machine.AddState(name="Interact NPC",
+                       execute_fn=lambda: Routines.Targeting.InteractTarget(),
+                       transition_delay_ms=1000)
+FSM_vars.state_machine.AddState(name="Take Bounty",
+                       execute_fn=lambda: Take_Bounty(),
+                       transition_delay_ms=1500)
+
 FSM_vars.state_machine.AddSubroutine(name="Start Pathing for Farm",
-                       sub_fsm = FSM_vars.path_to_farm_machine, # use farm_machine for the farm map, path_to_farm_machine to path to the farm zone
+                       sub_fsm = FSM_vars.path_to_farm_machine,
                        condition_fn=lambda: Map.GetMapID() == bot_vars.farm_end_id and IsCurrentPathFinished())
 FSM_vars.state_machine.AddState(name="Resign",
                        execute_fn=lambda: Resign(),
@@ -583,6 +554,37 @@ FSM_vars.state_machine.AddState(name="Wait if no resign",
                        exit_condition=bot_vars.resign_to_farm, # this will hold unless it gets check (prevents unintentional resign after incomplete vanquish)
                        run_once=False)
 FSM_vars.state_machine.AddState(name="Finished")
+
+# NPC Targeting/Interaction Functions
+def Target_NPC():
+    Player.SendChatCommand("target Luxon Priest")
+
+def Interact_NPC():
+    Routines.Targeting.InteractTarget()
+
+def Take_Bounty():
+    Player.SendDialog(int("0x85", 16))  # First dialog
+    SetPendingAction(1000)  # 1000ms delay
+    Player.SendDialog(int("0x86", 16))  # Second dialog
+    SetPendingAction(500)   # 500ms delay
+
+# State Machine States for NPC Interaction
+FSM_vars.state_machine.AddState(name="Go to NPC",
+                       execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.bounty_npc, FSM_vars.movement_handler),
+                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.bounty_npc, FSM_vars.movement_handler),
+                       run_once=False)
+
+FSM_vars.state_machine.AddState(name="Target NPC",
+                       execute_fn=lambda: Player.SendChatCommand("target Luxon Priest"),
+                       transition_delay_ms=1000)
+
+FSM_vars.state_machine.AddState(name="Interact NPC",
+                       execute_fn=lambda: Routines.Targeting.InteractTarget(),
+                       transition_delay_ms=1000)
+
+FSM_vars.state_machine.AddState(name="Take Bounty",
+                       execute_fn=lambda: Take_Bounty(),
+                       transition_delay_ms=1500)  # Increased delay to account for both dialog actions
 
 def DrawWindow():
     global bot_vars, FSM_vars
