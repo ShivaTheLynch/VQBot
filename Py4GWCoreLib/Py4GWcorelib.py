@@ -43,7 +43,374 @@ class Utils:
         Returns: float
         """
         return math.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
+    
+    class Filters:
+        @staticmethod
+        def FilterSelfFromAgentArray(agent_array):
+            """
+            Purpose: Filter the player from an agent array.
+            Args:
+                agent_array (list): The list of agent IDs.
+            Returns: list
+            """
+            player_instance = PyPlayer.PyPlayer()
+            return [agent_id for agent_id in agent_array if agent_id != player_instance.id]
 
+        @staticmethod
+        def FilterAgentArrayByRange(agent_pos,agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by range.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            x, y = Player.GetXY()
+
+            filtered_agent_array = []
+            for agent_id in agent_array:
+                agent_instance = PyAgent.PyAgent(agent_id)
+                if Utils.Distance(agent_pos, (agent_instance.x, agent_instance.y)) <= area:
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByMoving(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by moving.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsMoving(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByDead(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by dead.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsDead(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByAlive(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by alive.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsAlive(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByIsConditioned(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by conditioned.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsConditioned(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByIsBleeding(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by bleeding.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsBleeding(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByIsPoisoned(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by poisoned.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsPoisoned(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentByIsDeepWounded(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by deep wounded.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsDeepWounded(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByIsCrippled(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by crippled.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsCrippled(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByOwnerID(agent_pos, agent_array, owner_id, area=5000):
+            """
+            Purpose: Filter an agent array by owner ID.
+            Args:
+                agent_array (list): The list of agent IDs.
+                owner_id (int): The ID of the owner.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.GetOwnerID(agent_id) == owner_id:
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByNotOwnerID(agent_pos, agent_array, owner_id, area=5000):
+            """
+            Purpose: Filter an agent array by not owner ID.
+            Args:
+                agent_array (list): The list of agent IDs.
+                owner_id (int): The ID of the owner.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.GetOwnerID(agent_id) != owner_id:
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByHasBossGlow(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by boss glow.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.HasBossGlow(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByHasEnchantment(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by enchantment.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.HasEnchantment(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByNotHasEnchantment(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by not having an enchantment.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if not Agent.HasEnchantment(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByHasHex(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by hex.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.HasHex(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByNotHasHex(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by not having a hex.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if not Agent.HasHex(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByIsCasting(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by casting.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsCasting(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterArrayByNotCasting(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by not casting.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if not Agent.IsCasting(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByIsMartial(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by martial.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsMartial(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByIsCaster(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by caster.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsCaster(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByIsRanged(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by ranged.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsRanged(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
+
+        @staticmethod
+        def FilterAgentArrayByIsMelee(agent_pos, agent_array, area=5000):
+            """
+            Purpose: Filter an agent array by melee.
+            Args:
+                agent_array (list): The list of agent IDs.
+                area (int, optional): The area to search for the nearest agent. Default is 5000.
+            Returns: list
+            """
+            range_array = Utils.Filters.FilterAgentArrayByRange(agent_pos, agent_array, area)
+            filtered_agent_array = []
+            for agent_id in range_array:
+                if Agent.IsMelee(agent_id):
+                    filtered_agent_array.append(agent_id)
+            return filtered_agent_array
 
     class VectorFields:
         """
@@ -116,16 +483,21 @@ class Utils:
             Returns:
                 tuple: The unit vector (dx, dy) pointing from the player to the target.
             """
-            # Create adjusted positions as new tuples
-            pos_a = (self.probe_position[0] + 1, self.probe_position[1] + 1)
-            pos_b = (target_position[0] - 1, target_position[1] - 1)
+            pos_a = self.probe_position
+            pos_b = target_position
 
-            distance = Utils.Distance(pos_a, pos_b)
+            #fix for agent spawning on top of player 
+            pos_a[0] += 1
+            pos_a[1] += 1
+
+            pos_b[0] += -1
+            pos_b[1] += -1
+            
+            distance = Utils.Distance(pos_a,pos_b)
             if distance == 0:
                 return (0, 0)  # Avoid division by zero
-            return ((pos_b[0] - pos_a[0]) / distance, (pos_b[1] - pos_a[1]) / distance)
-
-
+            return ((pos_b[0] - pos_a[0]) / distance,
+                    (pos_b[1] - pos_a[1]) / distance)
 
         def process_agent_array(self, agent_array, radius, is_dangerous):
             """
@@ -252,95 +624,6 @@ class Utils:
             escape_vector = self.compute_combined_vector()
 
             return escape_vector
-
-class Timer:
-    def __init__(self):
-        """Initialize the Timer object with default values."""
-        self.timer_instance = Py4GW.Timer()
-
-    def Start(self):
-        """Start the timer."""
-        self.timer_instance.start()
-
-    def Stop(self):
-        """Stop the timer."""
-        self.timer_instance.stop()
-        
-    def Reset(self):
-        """Reset the timer."""
-        self.timer_instance.reset()
-
-    def Pause(self):
-        """Pause the timer."""
-        self.timer_instance.pause()
-
-    def Resume(self):
-        """Resume the timer."""
-        self.timer_instance.resume()
-
-    def IsStopped(self):
-        """Check if the timer is stopped."""
-        return self.timer_instance.is_stopped()
-
-    def IsRunning(self):
-        """Check if the timer is running."""
-        return self.timer_instance.is_running()
-
-    def IsPaused(self):
-        """Check if the timer is paused."""
-        return self.timer_instance.is_paused()
-
-    def GetElapsedTime(self):
-        """Get the elapsed time since the timer started."""
-        return self.timer_instance.get_elapsed_time()
-
-    def HasElapsed(self, time):
-        """Check if the timer has elapsed the specified time."""
-        return self.timer_instance.has_elapsed(time)
-
-    def FormatElapsedTime(self, mask="hh:mm:ss:ms"):
-        """Get the formatted elapsed time string based on the mask provided."""
-        ms = int(self.timer_instance.get_elapsed_time())
-        seconds = ms // 1000
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        secs = seconds % 60
-        milliseconds = ms % 1000  # Directly get remaining milliseconds
-
-        # Apply the mask
-        formatted_time = mask
-        if "hh" in mask:
-            formatted_time = formatted_time.replace("hh", f"{hours:02}")
-        if "mm" in mask:
-            formatted_time = formatted_time.replace("mm", f"{minutes:02}")
-        if "ss" in mask:
-            formatted_time = formatted_time.replace("ss", f"{secs:02}")
-        if "ms" in mask:
-            formatted_time = formatted_time.replace("ms", f"{milliseconds:03}")
-
-        return formatted_time
-
-def FormatTime(time_ms, mask="hh:mm:ss:ms"):
-        """Get the formatted elapsed time string based on the mask provided."""
-        ms = int(time_ms)
-        seconds = ms // 1000
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        secs = seconds % 60
-        milliseconds = ms % 1000  # Directly get remaining milliseconds
-
-        # Apply the mask
-        formatted_time = mask
-        if "hh" in mask:
-            formatted_time = formatted_time.replace("hh", f"{hours:02}")
-        if "mm" in mask:
-            formatted_time = formatted_time.replace("mm", f"{minutes:02}")
-        if "ss" in mask:
-            formatted_time = formatted_time.replace("ss", f"{secs:02}")
-        if "ms" in mask:
-            formatted_time = formatted_time.replace("ms", f"{milliseconds:03}")
-
-        return formatted_time
 
 class Key(Enum):
     # Letters
@@ -516,7 +799,6 @@ class Keystroke:
         Keystroke.keystroke_instance().PushKeyCombo(keys)
 
 
-arrived_timer = Timer()
 class Routines:
     class Checks:
         class Inventory:
@@ -588,6 +870,8 @@ class Routines:
 
                 return True
 
+
+
     class Transition:
         def TravelToOutpost(outpost_id, log= True):
             """
@@ -597,21 +881,18 @@ class Routines:
                 log (bool) Optional: Whether to log the action. Default is True.
             Returns: None
             """
-            global arrived_timer
-            if Map.IsMapReady():
-                if Map.GetMapID() != outpost_id and arrived_timer.IsStopped():
-                    if log:
-                        current_function = inspect.currentframe().f_code.co_name
-                        Py4GW.Console.Log(f"{current_function}", f"Outpost Check Failed. ({Map.GetMapName(outpost_id)}), Travelling.", Py4GW.Console.MessageType.Info)
-                    Map.Travel(outpost_id)
-                    arrived_timer.Start()
-                    return
-
-                if log and arrived_timer.IsStopped():
+            if Map.GetMapID() != outpost_id:
+                if log:
                     current_function = inspect.currentframe().f_code.co_name
-                    Py4GW.Console.Log(f"{current_function}", f"Outpost Check Passed. ({Map.GetMapName(outpost_id)}).", Py4GW.Console.MessageType.Info)
+                    Py4GW.Console.Log(f"{current_function}", f"Outpost Check Failed. ({Map.GetMapName(outpost_id)}), Travelling.", Py4GW.Console.MessageType.Info)
+                Map.Travel(outpost_id)
+                return
 
-        @staticmethod
+            if log:
+                current_function = inspect.currentframe().f_code.co_name
+                Py4GW.Console.Log(f"{current_function}", f"Outpost Check Passed. ({Map.GetMapName(outpost_id)}).", Py4GW.Console.MessageType.Info)
+
+
         def HasArrivedToOutpost(outpost_id, log= True):
             """
             Purpose: Check if the player has arrived at the specified outpost after traveling.
@@ -620,21 +901,11 @@ class Routines:
                 log (bool) Optional: Whether to log the action. Default is True.
             Returns: bool
             """
-            global arrived_timer
-
             if Map.GetMapID() == outpost_id and Routines.Transition.IsOutpostLoaded():
                 if log:
                     current_function = inspect.currentframe().f_code.co_name
                     Py4GW.Console.Log(f"{current_function}", f"Outpost Arrive Passed. @{Map.GetMapName(outpost_id)}.", Py4GW.Console.MessageType.Info)
-                    arrived_timer.Stop()
                     return True
-                else:
-                    if arrived_timer.HasElapsed(5000):
-                        arrived_timer.Stop()
-                        if log:
-                            current_function = inspect.currentframe().f_code.co_name
-                            Py4GW.Console.Log(f"{current_function}", f"Outpost Arrive Timeout. @{Map.GetMapName(outpost_id)}.", Py4GW.Console.MessageType.Info)
-                        return False
             
             if log:
                 current_function = inspect.currentframe().f_code.co_name
@@ -717,7 +988,7 @@ class Routines:
             gadget_array = AgentArray.Filter.ByDistance(gadget_array, Player.GetXY(), max_distance)
             gadget_array = AgentArray.Sort.ByDistance(gadget_array,Player.GetXY())
             for agent_id in gadget_array:
-                if Agent.GetGadgetID(agent_id) == 8141: #8141 is the ID for a chest
+                if Agent.GetGadgetID(agent_id) == 8141 or Agent.GetGadgetID(agent_id) == 69: #8141 is the ID for a chest
                     return agent_id
 
             return 0
@@ -740,7 +1011,7 @@ class Routines:
             lowest_hp = float('inf')
 
             player = PyPlayer.PyPlayer()
-            player_pos = Player.GetPlayerXY()
+            player_pos = Player.GetXY()
             agents = player.GetEnemyArray()
             agents = Utils.Filters.FilterAgentArrayByAlive(player_pos, agents, a_range) #filter out Dead and Far agents
 
@@ -756,7 +1027,7 @@ class Routines:
             for agent_id in agents:
                 agent = PyAgent.PyAgent(agent_id)
 
-                distance_to_self = Utils.Distance(Player.GetPlayerXY(), (agent.x, agent.y))
+                distance_to_self = Utils.Distance(Player.GetXY(), (agent.x, agent.y))
 
                 # Track the nearest enemy
                 if distance_to_self < nearest_distance:
@@ -801,7 +1072,7 @@ class Routines:
             lowest_hp = float('inf')
 
             player = PyPlayer.PyPlayer()
-            player_pos = Player.GetPlayerXY()
+            player_pos = Player.GetXY()
             agents = player.GetEnemyArray()
 
             # Filter out dead, distant, and non-melee agents
@@ -820,7 +1091,7 @@ class Routines:
             for agent_id in agents:
                 agent = PyAgent.PyAgent(agent_id)
 
-                distance_to_self = Utils.Distance(Player.GetPlayerXY(), (agent.x, agent.y))
+                distance_to_self = Utils.Distance(Player.GetXY(), (agent.x, agent.y))
 
                 # Track the nearest melee enemy
                 if distance_to_self < nearest_distance:
@@ -847,7 +1118,7 @@ class Routines:
             return best_target
 
     class Movement:
-        def FollowPath(path_handler,follow_handler, log_actions=False):
+        def FollowPath(path_handler, follow_handler, log_actions=False):
             """
             Purpose: Follow a path using the path handler and follow handler objects.
             Args:
@@ -855,20 +1126,18 @@ class Routines:
                 follow_handler (FollowXY): The FollowXY object for moving to waypoints.
             Returns: None
             """
-            
-            follow_handler.update()
-
             if follow_handler.is_following():
+                follow_handler.update()
                 return
 
-
-            point = path_handler.advance()
+            current_position = Player.GetXY()
+            point = path_handler.advance(current_position)
             if point is not None:
                 follow_handler.move_to_waypoint(point[0], point[1])
                 if log_actions:
                     Py4GW.Console.Log("FollowPath", f"Moving to {point}", Py4GW.Console.MessageType.Info)
 
-        def IsFollowPathFinished(path_handler,follow_handler):
+        def IsFollowPathFinished(path_handler, follow_handler):
             return path_handler.is_finished() and follow_handler.has_arrived()
 
 
@@ -886,7 +1155,6 @@ class Routines:
                 self.timer = Py4GW.Timer()  # Timer to track movement start time
                 self.wait_timer = Py4GW.Timer()  # Timer to track waiting after issuing move command
                 self.wait_timer_run_once = True
-
 
             def calculate_distance(self, pos1, pos2):
                 """
@@ -919,7 +1187,7 @@ class Routines:
                 self.timer.reset()
                 self.wait_timer.reset()
 
-            def update(self, log_actions = False):
+            def update(self):
                 """
                 Update the FollowXY object's state, check if the player has reached the waypoint,
                 and issue new move commands if necessary.
@@ -929,13 +1197,9 @@ class Routines:
                     is_casting = Agent.IsCasting(Player.GetAgentID())
                     is_moving = Agent.IsMoving(Player.GetAgentID())
                     is_knocked_down = Agent.IsKnockedDown(Player.GetAgentID())
-                    is_dead = Agent.IsDead(Player.GetAgentID())
 
-                    if is_casting or is_moving or is_knocked_down or is_dead:
-                        return 
-
-                     # Check if the wait timer has elapsed and re-enable movement checks
-                    if self.wait_timer.has_elapsed(1000):
+                    # Check if the wait timer has elapsed and re-enable movement checks
+                    if self.wait_timer.has_elapsed(1500):
                         self.wait_timer.reset()
                         self.wait_timer_run_once = True
 
@@ -945,6 +1209,9 @@ class Routines:
                         self.following = False
                         return
 
+                    if is_casting or is_moving or is_knocked_down:
+                        return 
+
                     # Re-issue the move command if the player is not moving and not casting
                     if self.wait_timer_run_once:
                         # Use the move_to_waypoint function to reissue movement
@@ -952,10 +1219,7 @@ class Routines:
                         Player.Move(self.waypoint[0], self.waypoint[1])
                         self.wait_timer_run_once  = False  # Disable immediate re-issue
                         self.wait_timer.start()  # Start the wait timer to prevent spamming movement
-                        if log_actions:
-                            Py4GW.Console.Log("FollowXY", f"Stopped, R eissue move", Py4GW.Console.MessageType.Info)
-
-                    
+                        Py4GW.Console.Log("FollowXY", f"stopped, reissue move", Py4GW.Console.MessageType.Info)
 
             def get_time_elapsed(self):
                 """
@@ -968,7 +1232,7 @@ class Routines:
                 Get the distance between the player and the current waypoint.
                 """
                 current_position = Player.GetXY()
-                return Utils.Distance(current_position, self.waypoint)
+                return self.calculate_distance(current_position, self.waypoint)
 
             def is_following(self):
                 """
@@ -984,7 +1248,7 @@ class Routines:
 
 
         class PathHandler:
-            def __init__(self, coordinates):
+            def __init__(self, coordinates, tolerance=100):
                 """
                 Purpose: Initialize the PathHandler with a list of coordinates.
                 Args:
@@ -992,6 +1256,8 @@ class Routines:
                 Returns: None
                 """
                 self.coordinates = coordinates
+                self.tolerance = tolerance
+                self.visited = [False] * len(coordinates)  # Track visited points
                 self.index = 0
                 self.reverse = False  # By default, move forward
                 self.finished = False
@@ -1006,30 +1272,47 @@ class Routines:
                     return None
                 return self.coordinates[self.index]
 
-            def advance(self):
+            # Helper function to calculate distance
+            def calculate_distance(self, pos1, pos2):
+                return ((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)**0.5
+            
+            def advance(self, current_position):
                 """
-                Purpose: Advance the pointer in the list based on the current direction (forward or reverse).
-                Args: None
-                Returns: tuple or None (next point or None if finished)
+                Returns the next target point based on the path and updates the visited status.
+                If the current point is reached within tolerance, it marks it as visited and advances.
                 """
-                if self.finished:
-                    return None
+                if self.index >= len(self.coordinates):
+                    return None  # All points have been visited
 
-                current_point = self.get_current_point()
+                # If we are at the start (index 0), find the closest point
+                if self.index == 0:
+                    closest_index = 0
+                    closest_distance = self.calculate_distance(current_position, self.coordinates[0])
+                    
+                    for i in range(1, len(self.coordinates)):
+                        distance = self.calculate_distance(current_position, self.coordinates[i])
+                        if distance < closest_distance:
+                            closest_distance = distance
+                            closest_index = i
 
-                # Move forward or backward based on the direction
-                if self.reverse:
-                    if self.index > 0:
-                        self.index -= 1
-                    else:
-                        self.finished = True
-                else:
+                    self.index = closest_index  # Set index to the closest point
+
+                current_point = self.coordinates[self.index]
+                
+                # Check if we've reached the current point
+                if self.calculate_distance(current_position, current_point) <= self.tolerance:
+                    self.visited[self.index] = True
+
                     if self.index < len(self.coordinates) - 1:
                         self.index += 1
                     else:
                         self.finished = True
 
-                return current_point
+                    # If there's a next point, return it; otherwise, return None
+                    if self.index < len(self.coordinates):
+                        return self.coordinates[self.index]
+                
+                return current_point  # Still need to move to the current point
 
             def toggle_direction(self):
                 """
@@ -1076,15 +1359,75 @@ class Routines:
                 Returns: int
                 """
                 return self.index
-
-            def get_position_count(self):
-                """
-                Purpose: Get the total number of positions in the list.
-                Args: None
-                Returns: int
-                """
-                return len(self.coordinates)
     
+
+class Timer:
+    def __init__(self):
+        """Initialize the Timer object with default values."""
+        self.timer_instance = Py4GW.Timer()
+
+    def Start(self):
+        """Start the timer."""
+        self.timer_instance.start()
+
+    def Stop(self):
+        """Stop the timer."""
+        self.timer_instance.stop()
+        
+    def Reset(self):
+        """Reset the timer."""
+        self.timer_instance.reset()
+
+    def Pause(self):
+        """Pause the timer."""
+        self.timer_instance.pause()
+
+    def Resume(self):
+        """Resume the timer."""
+        self.timer_instance.resume()
+
+    def IsStopped(self):
+        """Check if the timer is stopped."""
+        return self.timer_instance.is_stopped()
+
+    def IsRunning(self):
+        """Check if the timer is running."""
+        return self.timer_instance.is_running()
+
+    def IsPaused(self):
+        """Check if the timer is paused."""
+        return self.timer_instance.is_paused()
+
+    def GetElapsedTime(self):
+        """Get the elapsed time since the timer started."""
+        return self.timer_instance.get_elapsed_time()
+
+    def HasElapsed(self, time):
+        """Check if the timer has elapsed the specified time."""
+        return self.timer_instance.has_elapsed(time)
+
+    def FormatElapsedTime(self, mask="hh:mm:ss:ms"):
+        """Get the formatted elapsed time string based on the mask provided."""
+        ms = int(self.timer_instance.get_elapsed_time())
+        seconds = ms // 1000
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
+        milliseconds = ms % 1000  # Directly get remaining milliseconds
+
+        # Apply the mask
+        formatted_time = mask
+        if "hh" in mask:
+            formatted_time = formatted_time.replace("hh", f"{hours:02}")
+        if "mm" in mask:
+            formatted_time = formatted_time.replace("mm", f"{minutes:02}")
+        if "ss" in mask:
+            formatted_time = formatted_time.replace("ss", f"{secs:02}")
+        if "ms" in mask:
+            formatted_time = formatted_time.replace("ms", f"{milliseconds:03}")
+
+        return formatted_time
+
 
 class BehaviorTree:
     class NodeState(Enum):
@@ -1360,38 +1703,50 @@ class FSM:
             """
             A state that evaluates a condition and decides whether to continue or run a sub-FSM.
 
-            :param condition_fn: Function that returns True/False. If True,
+            :param condition_fn: Function that returns True/False. If True, it transitions to the next state. If False,
                                  it runs the sub_fsm and waits for it to finish before transitioning.
             :param sub_fsm: An optional sub-FSM that will be run if condition_fn returns False.
             """
             super().__init__(id, name)
-            self.condition_fn = condition_fn or (lambda: True)  # Default to True if no condition provided
+            self.condition_fn = condition_fn if condition_fn is not None else (lambda: True)  # Default to True if no condition provided
             self.sub_fsm = sub_fsm
             self.sub_fsm_active = False
 
         def execute(self):
-            """
-            Execute the condition function. If it returns False, mark the state as completed.
-            If it returns True, start the subroutine FSM (if provided).
-            """
+            # Py4GW.Console.Log("FSM", f"Executing State: {self.name}", Py4GW.Console.MessageType.Debug)
+
             if self.sub_fsm_active:
                 # If the sub-FSM is running, update it and check if it is finished
+                # Py4GW.Console.Log("FSM", f"Updating Sub-FSM: {self.sub_fsm.name}", Py4GW.Console.MessageType.Debug)
+
                 if not self.sub_fsm.is_finished():
                     self.sub_fsm.update()
                 else:
-                    self.sub_fsm_active = False  # Sub-FSM finished, can continue execution
-                    self.executed = True
-            else:
-                # Evaluate the condition
-                if not self.condition_fn():
-                    self.executed = True  # Condition not met, continue to the next state
-                elif self.sub_fsm:
-                    # Condition met, start the sub-FSM
-                    Py4GW.Console.Log("FSM", f"Starting FSM Subroutine", Py4GW.Console.MessageType.Success)
+                    # Py4GW.Console.Log("FSM", f"Sub-FSM Finished: {self.sub_fsm.name}", Py4GW.Console.MessageType.Success)
 
-                    self.sub_fsm.reset()
-                    self.sub_fsm.start()
-                    self.sub_fsm_active = True
+                    # Re-evaluate condition after sub-FSM completion
+                    if not self.condition_fn():
+                        # Py4GW.Console.Log("FSM", "Restarting Sub-FSM", Py4GW.Console.MessageType.Info)
+                        self.sub_fsm.reset()
+                        self.sub_fsm.start()
+                        self.sub_fsm_active = True
+                    else:
+                        self.sub_fsm_active = False  # Sub-FSM finished, can continue execution
+                        self.executed = True
+
+            else:
+                # Evaluate the condition initially
+                if not self.condition_fn():
+                    # Py4GW.Console.Log("FSM", "Condition Not Met: Starting Sub-FSM", Py4GW.Console.MessageType.Success)
+
+                    if self.sub_fsm:
+                        self.sub_fsm.reset()
+                        self.sub_fsm.start()
+                        self.sub_fsm_active = True
+                else:
+                    # Py4GW.Console.Log("FSM", "Condition Met: Moving to Next State", Py4GW.Console.MessageType.Warning)
+                    self.executed = True  # Continue to the next state
+
 
         def can_exit(self):
             """
@@ -1528,23 +1883,6 @@ class FSM:
                 return
         raise ValueError(f"State with name '{state_name}' not found.")
 
-    def get_current_state_number(self):
-        """Get the current state number (index) in the FSM."""
-        if self.current_state is None:
-            return 0
-        return self.states.index(self.current_state) + 1
-
-    def get_state_count (self):
-        """Get the total number of states in the FSM."""
-        return len(self.states)
-
-    def get_state_number_by_name(self, state_name):
-        """Get the step number (index) by the state name."""
-        for idx, state in enumerate(self.states):
-            if state.name == state_name:
-                return idx + 1
-        return 0
-    
     def get_current_step_name(self):
         """Get the name of the current step (state) in the FSM."""
         if self.current_state is None:
