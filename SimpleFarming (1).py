@@ -488,14 +488,14 @@ FSM_vars.farm_machine.AddState(name="Check if Alive",
                        run_once=False)
 FSM_vars.farm_machine.AddState(name="Seek for Farm",
                        execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.current_map_pathing, FSM_vars.movement_handler),
-                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or Map.GetMapID() != FSM_vars.current_map_id,
+                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or LootFound() or Map.GetMapID() != FSM_vars.current_map_id,
                        run_once=False)
 FSM_vars.farm_machine.AddSubroutine(name="Engage Farm",
                        sub_fsm = FSM_vars.fight_enemies,
                        condition_fn=lambda: not EnemyFound() or not Agent.IsAlive(Player.GetAgentID()))
-FSM_vars.farm_machine.AddSubroutine(name="Loot Chest",
-                       sub_fsm=FSM_vars.loot_chest,
-                       condition_fn=lambda: not ChestFound() or not Agent.IsAlive(Player.GetAgentID()))
+FSM_vars.farm_machine.AddSubroutine(name="Loot Items",
+                       sub_fsm = FSM_vars.loot_items,
+                       condition_fn=lambda: not LootFound())
 FSM_vars.farm_machine.AddState(name="Reset pather to find nearest point",
                        execute_fn=lambda: ResetPathing(FSM_vars.current_map_pathing) if not Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) else None,
                        run_once=True)
