@@ -45,7 +45,7 @@ map_paths = {
 }
 FARM_MODEL_IDS = [] 
 OUTPOST_ID = 389
-FARM_END_ID = 200
+FARM_END_ID = 389
 BLESSING_POSITION = (-8394, -9801)
 class BotVars:
     def __init__(self, starting_outpost_id=0, farm_end_id=0):
