@@ -242,7 +242,11 @@ def Resign():
         bot_vars.farm_count += 1
         SetPendingAction(2000)
     
-    if Routines.Transition.IsOutpostLoaded() or Map.IsMapLoading():
+    if Routines.Transition.IsOutpostLoaded():
+        if Map.GetMapID() != bot_vars.starting_map:
+            Routines.Transition.TravelToOutpost(bot_vars.starting_map)
+            SetPendingAction(3000)
+            return
         FSM_vars.state_machine.jump_to_state_by_name("Finished")
     
     SetPendingAction(1000) # make sure to wait before spamming IsLoaded
