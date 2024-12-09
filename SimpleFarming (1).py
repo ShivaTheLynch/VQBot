@@ -302,38 +302,60 @@ def ResetPathing(pathing):
 
 def UpdateLootTarget(max_distance=1250):
     global FSM_vars
-    if IfActionIsPending():
-        return
+    try:
+        if IfActionIsPending():
+            return
 
-    # Reset loot target once it's no longer valid or has been picked up
-    if FSM_vars.current_loot_target is not None and not Agent.IsItem(FSM_vars.current_loot_target):
+        # Reset loot target if it's no longer valid
+        if FSM_vars.current_loot_target is not None:
+            try:
+                if not Agent.IsItem(FSM_vars.current_loot_target):
+                    FSM_vars.current_loot_target = None
+            except:
+                FSM_vars.current_loot_target = None
+            return
+
+        # Only look for a new loot target if we don't have one
+        if FSM_vars.current_loot_target is None:
+            try:
+                # Get player position first
+                xy = Player.GetXY()
+                if xy is None:
+                    return None
+
+                # Retrieve and filter items
+                item_array = AgentArray.GetItemArray()
+                if not item_array:
+                    return None
+                
+                filtered_item_array = [
+                    item for item in item_array 
+                    if item is not None and Agent.IsItem(item) and Utils.Distance(xy, Agent.GetXY(item)) <= max_distance
+                ]
+                
+                if filtered_item_array:
+                    FSM_vars.current_loot_target = filtered_item_array[0]
+                    Py4GW.Console.Log(bot_vars.window_module.module_name, f"Loot Item found! {FSM_vars.current_loot_target}", Py4GW.Console.MessageType.Info)
+                    return FSM_vars.current_loot_target
+            except Exception as e:
+                Py4GW.Console.Log(bot_vars.window_module.module_name, f"Error in UpdateLootTarget: {str(e)}", Py4GW.Console.MessageType.Error)
+                FSM_vars.current_loot_target = None
+
+    except Exception as e:
+        Py4GW.Console.Log(bot_vars.window_module.module_name, f"Critical error in UpdateLootTarget: {str(e)}", Py4GW.Console.MessageType.Error)
         FSM_vars.current_loot_target = None
-        return
-
-    # Only look for a new loot target if we don't have one
-    if FSM_vars.current_loot_target is None:
-        # Retrieve all items within the area
-        item_array = AgentArray.GetItemArray()
-        xy = Player.GetXY()
-        filtered_item_array = AgentArray.Sort.ByDistance(item_array, xy)
-        
-        # Filter items within the maximum distance
-        nearby_items = [
-            item for item in filtered_item_array
-            if Utils.Distance(xy, Agent.GetXY(item)) <= max_distance
-        ]
-        
-        # Set the current loot target to the nearest valid item
-        for item in nearby_items:
-            FSM_vars.current_loot_target = item
-            Py4GW.Console.Log(bot_vars.window_module.module_name, f"Loot Item found! {item}", Py4GW.Console.MessageType.Info)
-            return item  # Return the loot item if found
-
-    return None  # No valid loot item found
+    
+    return None
 
 def LootFound():
-    UpdateLootTarget(max_distance=1250)
-    return FSM_vars.current_loot_target is not None
+    try:
+        if not Agent.IsAlive(Player.GetAgentID()):
+            return False
+        
+        UpdateLootTarget(max_distance=1250)
+        return FSM_vars.current_loot_target is not None and Agent.IsItem(FSM_vars.current_loot_target)
+    except:
+        return False
 
 def IsChestFound(max_distance=2500):
     return Routines.Targeting.GetNearestChest(max_distance) != 0
@@ -426,20 +448,24 @@ def format_elapsed_time(milliseconds):
         return f"{minutes}m {seconds:.2f}s"
     
 def WaitForLoot():
-    if IfActionIsPending():
-        return False
-    
-    if not LootFound():
-        return True
-    else:
-        SetPendingAction(2000)
+    try:
+        if IfActionIsPending():
+            return False
+        
+        if not LootFound():
+            return True
+        else:
+            SetPendingAction(2000)
+            return False
+    except Exception as e:
+        Py4GW.Console.Log(bot_vars.window_module.module_name, f"Error in WaitForLoot: {str(e)}", Py4GW.Console.MessageType.Error)
         return True
 
 FSM_vars.loot_items.AddState(name="Select Item",
-                    execute_fn=lambda: FSM_vars.current_loot_target != None and Player.ChangeTarget(FSM_vars.current_loot_target),
+                    execute_fn=lambda: FSM_vars.current_loot_target is not None and Agent.IsItem(FSM_vars.current_loot_target) and Player.ChangeTarget(FSM_vars.current_loot_target),
                     transition_delay_ms=1000)
 FSM_vars.loot_items.AddState(name="PickUpItem",
-                    execute_fn=lambda: FSM_vars.current_loot_target != None and Routines.Targeting.InteractTarget(),
+                    execute_fn=lambda: FSM_vars.current_loot_target is not None and Agent.IsItem(FSM_vars.current_loot_target) and Routines.Targeting.InteractTarget(),
                     transition_delay_ms=1000)
 FSM_vars.loot_items.AddState(name="Wait for Loot to Finish",
                     exit_condition=lambda: WaitForLoot(),
@@ -488,11 +514,14 @@ FSM_vars.farm_machine.AddState(name="Check if Alive",
                        run_once=False)
 FSM_vars.farm_machine.AddState(name="Seek for Farm",
                        execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.current_map_pathing, FSM_vars.movement_handler),
-                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or Map.GetMapID() != FSM_vars.current_map_id,
+                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or LootFound() or Map.GetMapID() != FSM_vars.current_map_id,
                        run_once=False)
 FSM_vars.farm_machine.AddSubroutine(name="Engage Farm",
                        sub_fsm = FSM_vars.fight_enemies,
                        condition_fn=lambda: not EnemyFound() or not Agent.IsAlive(Player.GetAgentID()))
+FSM_vars.farm_machine.AddSubroutine(name="Collect Loot",
+                       sub_fsm = FSM_vars.loot_items,
+                       condition_fn=lambda: not LootFound())
 FSM_vars.farm_machine.AddState(name="Reset pather to find nearest point",
                        execute_fn=lambda: ResetPathing(FSM_vars.current_map_pathing) if not Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) else None,
                        run_once=True)
