@@ -236,20 +236,38 @@ def Resign():
     if IfActionIsPending():
         return
 
-    if bot_vars.resign_to_farm == True and FSM_vars.has_resigned == False:
-        Player.SendChatCommand("resign") # only resign once
+    # First check if we need to resign
+    if bot_vars.resign_to_farm and not FSM_vars.has_resigned:
+        Player.SendChatCommand("resign")
         FSM_vars.has_resigned = True
         bot_vars.farm_count += 1
+        # Immediately travel to starting outpost after resigning
+        Routines.Transition.TravelToOutpost(bot_vars.starting_map)
+        FSM_vars.state_machine.jump_to_state_by_name("Finished")  # Set to finished right after resign
+        # Reset environment to prepare for next run
+        ResetEnvironment()
+        bot_vars.has_env_reset = False
+        StartBot()
         SetPendingAction(2000)
+        return
     
+    # Handle the rest of the resign process
     if Routines.Transition.IsOutpostLoaded():
         if Map.GetMapID() != bot_vars.starting_map:
             Routines.Transition.TravelToOutpost(bot_vars.starting_map)
             SetPendingAction(3000)
             return
+        
+        # Now that we're in the correct outpost, travel to the farm end map
+        if Map.GetMapID() != bot_vars.farm_end_id:
+            Routines.Transition.TravelToOutpost(bot_vars.farm_end_id)
+            SetPendingAction(3000)
+            return
+            
         FSM_vars.state_machine.jump_to_state_by_name("Finished")
+        return
     
-    SetPendingAction(1000) # make sure to wait before spamming IsLoaded
+    SetPendingAction(1000)
 
 def UpdateTarget(max_distance=2500):
     if IfActionIsPending():
@@ -581,10 +599,9 @@ FSM_vars.state_machine.AddSubroutine(name="Start Pathing for Farm",
                        condition_fn=lambda: Map.GetMapID() == bot_vars.farm_end_id and IsCurrentPathFinished())
 FSM_vars.state_machine.AddState(name="Resign",
                        execute_fn=lambda: Resign(),
-                       run_once=False,
-                       transition_delay_ms=1000)
+                       run_once=False)
 FSM_vars.state_machine.AddState(name="Wait if no resign",
-                       exit_condition=bot_vars.resign_to_farm, # this will hold unless it gets check (prevents unintentional resign after incomplete vanquish)
+                       exit_condition=lambda: bot_vars.resign_to_farm,  # Only proceed if resign is enabled
                        run_once=False)
 FSM_vars.state_machine.AddState(name="Finished")
 
