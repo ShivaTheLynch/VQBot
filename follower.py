@@ -3,7 +3,7 @@ from Py4GWCoreLib.Skillbar import SkillBar
 from Py4GWCoreLib.Agent import Agent
 import time
 
-module_name = "Simple Follower"
+module_name = "Spiker Follower"
 
 # Add this near the top with other global variables
 is_following = False
@@ -23,70 +23,94 @@ class GameAreas:
 follow_distance = GameAreas().Area
 
 checkbox_state = True
+
+def DisplaySkillInfo():
+    """Display skill information in a separate tab."""
+    if PyImGui.begin_tab_item("Skills"):
+        PyImGui.text("Current Skillbar:")
+        PyImGui.separator()
+        
+        for slot in range(1, 9):  # Skills 1-8
+            skill_id = SkillBar.GetSkillIDBySlot(slot)
+            if skill_id:
+                skill_name = Skill.GetName(skill_id)
+                PyImGui.text(f"Skill {slot}: [{skill_id}] {skill_name}")
+            else:
+                PyImGui.text(f"Skill {slot}: Empty")
+        
+        PyImGui.end_tab_item()
+
 def DrawWindow():
     global checkbox_state, is_following, is_attacking, start_time
 
     if PyImGui.begin("Following/Fighting bot"):
-        # Title and Credits Section
-        PyImGui.text("=== Follow/Fight Bot ===")
-        PyImGui.text("Credits: Shiva and Apo")
-        PyImGui.separator()
+        if PyImGui.begin_tab_bar("TabBar"):
+            if PyImGui.begin_tab_item("Main"):
+                # Title and Credits Section
+                PyImGui.text("=== Follow/Fight Bot ===")
+                PyImGui.text("Credits: Shiva,Apo and Disasterus")
+                PyImGui.separator()
 
-        # Status Section
-        PyImGui.text("Status:")
-        if is_following:
-            elapsed_time = time.time() - start_time
-            hours = int(elapsed_time // 3600)
-            minutes = int((elapsed_time % 3600) // 60)
-            seconds = int(elapsed_time % 60)
-            PyImGui.text(f"⏱ Following time: {hours:02d}:{minutes:02d}:{seconds:02d}")
-            PyImGui.text("🤖 Follower Status: Active")
-        else:
-            PyImGui.text("🤖 Follower Status: Inactive")
-        
-        if is_attacking:
-            PyImGui.text("⚔️ Attack Status: Active")
-        else:
-            PyImGui.text("⚔️ Attack Status: Inactive")
-        PyImGui.separator()
+                # Status Section
+                PyImGui.text("Status:")
+                if is_following:
+                    elapsed_time = time.time() - start_time
+                    hours = int(elapsed_time // 3600)
+                    minutes = int((elapsed_time % 3600) // 60)
+                    seconds = int(elapsed_time % 60)
+                    PyImGui.text(f"⏱ Following time: {hours:02d}:{minutes:02d}:{seconds:02d}")
+                    PyImGui.text("🤖 Follower Status: Active")
+                else:
+                    PyImGui.text("🤖 Follower Status: Inactive")
+                
+                if is_attacking:
+                    PyImGui.text("⚔️ Attack Status: Active")
+                else:
+                    PyImGui.text("⚔️ Attack Status: Inactive")
+                PyImGui.separator()
 
-        # Called Targets Section
-        PyImGui.text("Called Targets:")
-        players = Party.GetPlayers()
-        has_called_targets = False
-        for player in players:
-            if player.called_target_id != 0:
-                has_called_targets = True
-                PyImGui.text(f"👉 Player {player.login_number} → Target {player.called_target_id}")
-        if not has_called_targets:
-            PyImGui.text("No active called targets")
-        PyImGui.separator()
+                # Called Targets Section
+                PyImGui.text("Called Targets:")
+                players = Party.GetPlayers()
+                has_called_targets = False
+                for player in players:
+                    if player.called_target_id != 0:
+                        has_called_targets = True
+                        PyImGui.text(f"👉 Player {player.login_number} → Target {player.called_target_id}")
+                if not has_called_targets:
+                    PyImGui.text("No active called targets")
+                PyImGui.separator()
 
-        # Control Buttons
-        if not is_following:
-            if PyImGui.button("▶ Start Following"):
-                is_following = True
-                start_time = time.time()
-                runfollower()
-                Py4GW.Console.Log("Follower", "Follow the leader!", Py4GW.Console.MessageType.Info)
-        else:
-            if PyImGui.button("⏹ Stop Following"):
-                is_following = False
-                Py4GW.Console.Log("Follower", "Stopped following.", Py4GW.Console.MessageType.Info)
+                # Control Buttons
+                if not is_following:
+                    if PyImGui.button("▶ Start Following"):
+                        is_following = True
+                        start_time = time.time()
+                        runfollower()
+                        Py4GW.Console.Log("Follower", "Follow the leader!", Py4GW.Console.MessageType.Info)
+                else:
+                    if PyImGui.button("⏹ Stop Following"):
+                        is_following = False
+                        Py4GW.Console.Log("Follower", "Stopped following.", Py4GW.Console.MessageType.Info)
 
-        PyImGui.separator()  # Place the next button on the same line
+                PyImGui.separator()  # Place the next button on the same line
 
-        if not is_attacking:
-            if PyImGui.button("⚔️ Start Attacking"):
-                is_attacking = True
-                start_time = time.time()
-                runbot()
-                Py4GW.Console.Log("Follower", "Started attacking!", Py4GW.Console.MessageType.Info)
-        else:
-            if PyImGui.button("🛡️ Stop Attacking"):
-                is_attacking = False
-                Py4GW.Console.Log("Follower", "Stopped attacking.", Py4GW.Console.MessageType.Info)
+                if not is_attacking:
+                    if PyImGui.button("⚔️ Start Attacking"):
+                        is_attacking = True
+                        start_time = time.time()
+                        runbot()
+                        Py4GW.Console.Log("Follower", "Started attacking!", Py4GW.Console.MessageType.Info)
+                else:
+                    if PyImGui.button("🛡️ Stop Attacking"):
+                        is_attacking = False
+                        Py4GW.Console.Log("Follower", "Stopped attacking.", Py4GW.Console.MessageType.Info)
 
+                PyImGui.end_tab_item()
+            
+            DisplaySkillInfo()  # New skills tab
+            
+            PyImGui.end_tab_bar()
     PyImGui.end()
 
 

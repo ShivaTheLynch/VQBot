@@ -83,12 +83,12 @@ class StateMachineVars:
             self.fight_enemies = FSM("Fight")
 
             # Movement
-            self.outpost_pathing = Routines.Movement.PathHandler(outpost_coordinate_list)
-            self.current_map_pathing = Routines.Movement.PathHandler([])
-            self.bounty_npc = Routines.Movement.PathHandler([(-8394, -9801)])  # Added bounty NPC path
+            self.outpost_pathing = Routines2.Movement.PathHandler(outpost_coordinate_list)
+            self.current_map_pathing = Routines2.Movement.PathHandler([])
+            self.bounty_npc = Routines2.Movement.PathHandler([(-8394, -9801)])  # Added bounty NPC path
             self.chest_found_pathing = None
             self.current_map_id = 0
-            self.movement_handler = Routines.Movement.FollowXY()
+            self.movement_handler = Routines2.Movement.FollowXY()
 
             # Other tools and variables
             self.ping_handler = Py4GW.PingHandler()
@@ -149,29 +149,29 @@ def CheckMapLocation():
     if IfActionIsPending():
         return
 
-    if Routines.Transition.IsExplorableLoaded():
+    if Routines2.Transition.IsExplorableLoaded():
         if Map.GetMapID() not in map_paths:
-            Routines.Transition.TravelToOutpost(bot_vars.starting_map) # travel to starting outpost if not in one of the zones
+            Routines2.Transition.TravelToOutpost(bot_vars.starting_map)
             SetPendingAction(2000)
             return
         
         Py4GW.Console.Log(bot_vars.window_module.module_name, f"{Map.GetMapName(Map.GetMapID())} ({Map.GetMapID()}) already loaded. Switching to Farm step.", Py4GW.Console.MessageType.Info)
         FSM_vars.current_map_id = 0
-        FSM_vars.current_map_pathing = Routines.Movement.PathHandler([])
+        FSM_vars.current_map_pathing = Routines2.Movement.PathHandler([])
         FSM_vars.state_machine.jump_to_state_by_name("Start Pathing for Farm")
         return
         
-    if Routines.Transition.IsOutpostLoaded():
+    if Routines2.Transition.IsOutpostLoaded():
         Py4GW.Console.Log(bot_vars.window_module.module_name, f"Outpost loaded", Py4GW.Console.MessageType.Info)
         if Map.GetMapID() != bot_vars.starting_map:
-            Routines.Transition.TravelToOutpost(bot_vars.starting_map)
+            Routines2.Transition.TravelToOutpost(bot_vars.starting_map)
             SetPendingAction(3000)
             return
         
         FSM_vars.timer.stop()
         FSM_vars.state_machine.jump_to_state_by_name("Leaving Outpost")
     
-    SetPendingAction(int(FSM_vars.ping_handler.GetCurrentPing()) * 2) # to help prevent it from checking too frequently
+    SetPendingAction(int(FSM_vars.ping_handler.GetCurrentPing()) * 2)
 
 def LoadSkillBar(): # TODO ould need to set skill templates for the farm
     global bot_vars
@@ -207,7 +207,7 @@ def IsSkillBarLoaded():
 
 def HandleSkills():
     global FSM_vars
-    if not Routines.Transition.IsExplorableLoaded():
+    if not Routines2.Transition.IsExplorableLoaded():
         return
     
     if IfActionIsPending():
@@ -236,31 +236,26 @@ def Resign():
     if IfActionIsPending():
         return
 
-    # First check if we need to resign
     if bot_vars.resign_to_farm and not FSM_vars.has_resigned:
         Player.SendChatCommand("resign")
         FSM_vars.has_resigned = True
         bot_vars.farm_count += 1
-        # Immediately travel to starting outpost after resigning
-        Routines.Transition.TravelToOutpost(bot_vars.starting_map)
-        FSM_vars.state_machine.jump_to_state_by_name("Finished")  # Set to finished right after resign
-        # Reset environment to prepare for next run
+        Routines2.Transition.TravelToOutpost(bot_vars.starting_map)
+        FSM_vars.state_machine.jump_to_state_by_name("Finished")
         ResetEnvironment()
         bot_vars.has_env_reset = False
         StartBot()
         SetPendingAction(2000)
         return
     
-    # Handle the rest of the resign process
-    if Routines.Transition.IsOutpostLoaded():
+    if Routines2.Transition.IsOutpostLoaded():
         if Map.GetMapID() != bot_vars.starting_map:
-            Routines.Transition.TravelToOutpost(bot_vars.starting_map)
+            Routines2.Transition.TravelToOutpost(bot_vars.starting_map)
             SetPendingAction(3000)
             return
         
-        # Now that we're in the correct outpost, travel to the farm end map
         if Map.GetMapID() != bot_vars.farm_end_id:
-            Routines.Transition.TravelToOutpost(bot_vars.farm_end_id)
+            Routines2.Transition.TravelToOutpost(bot_vars.farm_end_id)
             SetPendingAction(3000)
             return
             
@@ -317,10 +312,15 @@ def ChangeTargeting():
 
 def ResetPathing(pathing):
     global FSM_vars
-    if not Routines.Movement.IsFollowPathFinished(pathing, FSM_vars.movement_handler):
-        pathing.reset()
-    else:
-        FSM_vars.farm_machine.jump_to_state_by_name("Finished")
+    try:
+        if not Routines2.Movement.IsFollowPathFinished(pathing, FSM_vars.movement_handler):
+            FSM_vars.movement_handler.reset()
+            pathing.reset()
+        else:
+            FSM_vars.farm_machine.jump_to_state_by_name("Finished")
+    except Exception as e:
+        Py4GW.Console.Log(bot_vars.window_module.module_name, f"Error in ResetPathing: {str(e)}", Py4GW.Console.MessageType.Error)
+        FSM_vars.movement_handler.reset()
 
 def UpdateLootTarget(max_distance=1250):
     global FSM_vars
@@ -380,7 +380,7 @@ def LootFound():
         return False
 
 def IsChestFound(max_distance=2500):
-    return Routines.Targeting.GetNearestChest(max_distance) != 0
+    return Routines2.Targeting.GetNearestChest(max_distance) != 0
 
 def ResetFollowPathToChest():
     global FSM_vars
@@ -391,7 +391,7 @@ def ResetFollowPathToChest():
         found_chest_coord_list = [(chest_x, chest_y)]
     
     if found_chest_coord_list != None:
-        FSM_vars.chest_found_pathing = Routines.Movement.PathHandler(found_chest_coord_list)
+        FSM_vars.chest_found_pathing = Routines2.Movement.PathHandler(found_chest_coord_list)
         FSM_vars.loot_chest.jump_to_state_by_name("MoveToChest")
     else:
         FSM_vars.loot_chest.jump_to_state_by_name("Finished")
@@ -409,7 +409,7 @@ def ChestFound(max_distance=1250):
     if IfActionIsPending():
         return False
     
-    chest = Routines.Targeting.GetNearestChest(max_distance)
+    chest = Routines2.Targeting.GetNearestChest(max_distance)
     if chest != 0 and chest not in FSM_vars.completed_chests:
         Py4GW.Console.Log(bot_vars.window_module.module_name, f"Chest {chest} found!", Py4GW.Console.MessageType.Info)
         FSM_vars.current_chest_target = chest
@@ -442,19 +442,38 @@ def CheckForMap():
         return False
     
     current_map = Map.GetMapID()
-    if Routines.Transition.IsExplorableLoaded():
+    if Routines2.Transition.IsExplorableLoaded():
         if current_map in map_paths:
             Py4GW.Console.Log(bot_vars.window_module.module_name, f"Setting current map and path to {current_map}", Py4GW.Console.MessageType.Info)
-            FSM_vars.current_map_pathing = Routines.Movement.PathHandler(map_paths[current_map])
+            FSM_vars.current_map_pathing = Routines2.Movement.PathHandler(map_paths[current_map])
             FSM_vars.current_map_id = current_map
-            return
+            FSM_vars.movement_handler.reset()  # Reset movement handler when changing maps
+            return True
     
-    # not sure if I need to handle the case where this map path doesn't get loaded correctly
     Py4GW.Console.Log(bot_vars.window_module.module_name, f"CheckForMap() when Explorable not loaded.", Py4GW.Console.MessageType.Info)
     SetPendingAction(2000)
+    return False
 
 def IsCurrentPathFinished():
-    return (Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) and not EnemyFound())
+    global FSM_vars
+    try:
+        # Check if we have a valid path and movement handler
+        if not FSM_vars.current_map_pathing or not FSM_vars.movement_handler:
+            return True
+            
+        # Check if we're at the end of the path
+        is_path_finished = Routines2.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler)
+        
+        # Only consider the path finished if we're not currently fighting
+        if is_path_finished and not EnemyFound():
+            # Reset movement handler to ensure clean state
+            FSM_vars.movement_handler.reset()
+            return True
+            
+        return False
+    except Exception as e:
+        Py4GW.Console.Log(bot_vars.window_module.module_name, f"Error in IsCurrentPathFinished: {str(e)}", Py4GW.Console.MessageType.Error)
+        return False
 
 def format_elapsed_time(milliseconds):
     """
@@ -487,7 +506,7 @@ FSM_vars.loot_items.AddState(name="Select Item",
                     execute_fn=lambda: FSM_vars.current_loot_target is not None and Agent.IsItem(FSM_vars.current_loot_target) and Player.ChangeTarget(FSM_vars.current_loot_target),
                     transition_delay_ms=1000)
 FSM_vars.loot_items.AddState(name="PickUpItem",
-                    execute_fn=lambda: FSM_vars.current_loot_target is not None and Agent.IsItem(FSM_vars.current_loot_target) and Routines.Targeting.InteractTarget(),
+                    execute_fn=lambda: FSM_vars.current_loot_target is not None and Agent.IsItem(FSM_vars.current_loot_target) and Routines2.Targeting.InteractTarget(),
                     transition_delay_ms=1000)
 FSM_vars.loot_items.AddState(name="Wait for Loot to Finish",
                     exit_condition=lambda: WaitForLoot(),
@@ -499,8 +518,8 @@ FSM_vars.loot_chest.AddState(name="CheckForChest",
 FSM_vars.loot_chest.AddState(name="Reset Follow Path To Chest",
                     execute_fn=lambda: ResetFollowPathToChest())
 FSM_vars.loot_chest.AddState(name="MoveToChest",
-                    execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.chest_found_pathing, FSM_vars.movement_handler),
-                    exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.chest_found_pathing, FSM_vars.movement_handler),
+                    execute_fn=lambda: Routines2.Movement.FollowPath(FSM_vars.chest_found_pathing, FSM_vars.movement_handler),
+                    exit_condition=lambda: Routines2.Movement.IsFollowPathFinished(FSM_vars.chest_found_pathing, FSM_vars.movement_handler),
                     run_once=False)
 FSM_vars.loot_chest.AddState(name="Select Chest",
                     execute_fn=lambda: Player.ChangeTarget(FSM_vars.current_chest_target),
@@ -509,7 +528,7 @@ FSM_vars.loot_chest.AddState(name="Track Chest",
                     exit_condition=lambda: TrackChest(),
                     transition_delay_ms=1000)
 FSM_vars.loot_chest.AddState(name="Interact with Chest",
-                    execute_fn=lambda: Routines.Targeting.InteractTarget(),
+                    execute_fn=lambda: Routines2.Targeting.InteractTarget(),
                     transition_delay_ms=1000)
 FSM_vars.loot_chest.AddState(name="Open With Lockpick",
                     execute_fn=lambda: Player.SendDialog(2),
@@ -521,7 +540,7 @@ FSM_vars.fight_enemies.AddState(name="Target Enemy",
                     execute_fn=lambda: Player.ChangeTarget(FSM_vars.current_target),
                     transition_delay_ms=500)
 FSM_vars.fight_enemies.AddState(name="Engage Enemy",
-                    execute_fn=lambda: Routines.Targeting.InteractTarget(),
+                    execute_fn=lambda: Routines2.Targeting.InteractTarget(),
                     transition_delay_ms=500)
 FSM_vars.fight_enemies.AddState(name="Wait for Combat to Finish",
                     exit_condition=lambda: not Agent.IsAlive(FSM_vars.current_target) or PlayerDied(),
@@ -535,8 +554,8 @@ FSM_vars.farm_machine.AddState(name="Check if Alive",
                        exit_condition=lambda: Agent.IsAlive(Player.GetAgentID()),
                        run_once=False)
 FSM_vars.farm_machine.AddState(name="Seek for Farm",
-                       execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.current_map_pathing, FSM_vars.movement_handler),
-                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or LootFound() or Map.GetMapID() != FSM_vars.current_map_id,
+                       execute_fn=lambda: Routines2.Movement.FollowPath(FSM_vars.current_map_pathing, FSM_vars.movement_handler),
+                       exit_condition=lambda: Routines2.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) or EnemyFound() or ChestFound() or LootFound() or Map.GetMapID() != FSM_vars.current_map_id,
                        run_once=False)
 FSM_vars.farm_machine.AddSubroutine(name="Engage Farm",
                        sub_fsm = FSM_vars.fight_enemies,
@@ -545,20 +564,21 @@ FSM_vars.farm_machine.AddSubroutine(name="Collect Loot",
                        sub_fsm = FSM_vars.loot_items,
                        condition_fn=lambda: not LootFound())
 FSM_vars.farm_machine.AddState(name="Reset pather to find nearest point",
-                       execute_fn=lambda: ResetPathing(FSM_vars.current_map_pathing) if not Routines.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) else None,
+                       execute_fn=lambda: ResetPathing(FSM_vars.current_map_pathing) if not Routines2.Movement.IsFollowPathFinished(FSM_vars.current_map_pathing, FSM_vars.movement_handler) else None,
                        run_once=True)
 FSM_vars.farm_machine.AddState(name="Finished")
 
 # Pathing to Farm Routine
 FSM_vars.path_to_farm_machine.AddState(name="Check For Pathing Map",
                         execute_fn=lambda: CheckForMap(),
+                        exit_condition=lambda: Map.GetMapID() in map_paths,
                         run_once=False)
 FSM_vars.path_to_farm_machine.AddState(name="Reset Movement",
                         execute_fn=lambda: FSM_vars.movement_handler.reset(),
                         transition_delay_ms=1200)
 FSM_vars.path_to_farm_machine.AddSubroutine(name="Handle Map Pathing",
                        sub_fsm = FSM_vars.farm_machine,
-                       condition_fn=lambda: IsCurrentPathFinished() or Map.GetMapID() != FSM_vars.current_map_id) # if path finished or not in same map, then move on
+                       condition_fn=lambda: not IsCurrentPathFinished() and Map.GetMapID() == FSM_vars.current_map_id)
 
 #MAIN STATE MACHINE CONFIGURATION
 FSM_vars.state_machine.AddState(name="Map Check for Farm", 
@@ -570,25 +590,25 @@ FSM_vars.state_machine.AddState(name="Load SkillBar",
                        transition_delay_ms=1000,
                        exit_condition=lambda: IsSkillBarLoaded())
 FSM_vars.state_machine.AddState(name="Leaving Outpost",
-                       execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.outpost_pathing, FSM_vars.movement_handler),
-                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.outpost_pathing, FSM_vars.movement_handler) or Map.IsMapLoading(),
+                       execute_fn=lambda: Routines2.Movement.FollowPath(FSM_vars.outpost_pathing, FSM_vars.movement_handler),
+                       exit_condition=lambda: Routines2.Movement.IsFollowPathFinished(FSM_vars.outpost_pathing, FSM_vars.movement_handler) or Map.IsMapLoading(),
                        run_once=False)
 FSM_vars.state_machine.AddState(name="Waiting for Explorable Map Load",
-                       exit_condition=lambda: Routines.Transition.IsExplorableLoaded(log_actions=True),
+                       exit_condition=lambda: Routines2.Transition.IsExplorableLoaded(log_actions=True),
                        transition_delay_ms=1200)
 FSM_vars.state_machine.AddState(name="Reset Movement",
                        execute_fn=lambda: FSM_vars.movement_handler.reset(), 
                        transition_delay_ms=1200)
 
 FSM_vars.state_machine.AddState(name="Go to NPC",
-                       execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.bounty_npc, FSM_vars.movement_handler),
-                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.bounty_npc, FSM_vars.movement_handler),
+                       execute_fn=lambda: Routines2.Movement.FollowPath(FSM_vars.bounty_npc, FSM_vars.movement_handler),
+                       exit_condition=lambda: Routines2.Movement.IsFollowPathFinished(FSM_vars.bounty_npc, FSM_vars.movement_handler),
                        run_once=False)
 FSM_vars.state_machine.AddState(name="Target NPC",
                        execute_fn=lambda: Player.SendChatCommand("target Luxon Priest"),
                        transition_delay_ms=1000)
 FSM_vars.state_machine.AddState(name="Interact NPC",
-                       execute_fn=lambda: Routines.Targeting.InteractTarget(),
+                       execute_fn=lambda: Routines2.Targeting.InteractTarget(),
                        transition_delay_ms=1000)
 FSM_vars.state_machine.AddState(name="Take Bounty",
                        execute_fn=lambda: Take_Bounty(),
@@ -599,6 +619,7 @@ FSM_vars.state_machine.AddSubroutine(name="Start Pathing for Farm",
                        condition_fn=lambda: Map.GetMapID() == bot_vars.farm_end_id and IsCurrentPathFinished())
 FSM_vars.state_machine.AddState(name="Resign",
                        execute_fn=lambda: Resign(),
+                       exit_condition=lambda: bot_vars.resign_to_farm and FSM_vars.has_resigned,  # Add condition check
                        run_once=False)
 FSM_vars.state_machine.AddState(name="Wait if no resign",
                        exit_condition=lambda: bot_vars.resign_to_farm,  # Only proceed if resign is enabled
@@ -610,7 +631,7 @@ def Target_NPC():
     Player.SendChatCommand("target Luxon Priest")
 
 def Interact_NPC():
-    Routines.Targeting.InteractTarget()
+    Routines2.Targeting.InteractTarget()
 
 def Take_Bounty():
     Player.SendDialog(int("0x85", 16))  # First dialog
@@ -620,8 +641,8 @@ def Take_Bounty():
 
 # State Machine States for NPC Interaction
 FSM_vars.state_machine.AddState(name="Go to NPC",
-                       execute_fn=lambda: Routines.Movement.FollowPath(FSM_vars.bounty_npc, FSM_vars.movement_handler),
-                       exit_condition=lambda: Routines.Movement.IsFollowPathFinished(FSM_vars.bounty_npc, FSM_vars.movement_handler),
+                       execute_fn=lambda: Routines2.Movement.FollowPath(FSM_vars.bounty_npc, FSM_vars.movement_handler),
+                       exit_condition=lambda: Routines2.Movement.IsFollowPathFinished(FSM_vars.bounty_npc, FSM_vars.movement_handler),
                        run_once=False)
 
 FSM_vars.state_machine.AddState(name="Target NPC",
@@ -629,7 +650,7 @@ FSM_vars.state_machine.AddState(name="Target NPC",
                        transition_delay_ms=1000)
 
 FSM_vars.state_machine.AddState(name="Interact NPC",
-                       execute_fn=lambda: Routines.Targeting.InteractTarget(),
+                       execute_fn=lambda: Routines2.Targeting.InteractTarget(),
                        transition_delay_ms=1000)
 
 FSM_vars.state_machine.AddState(name="Take Bounty",
